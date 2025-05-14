@@ -1,4 +1,4 @@
 streamlit
-eaarthengine-api
+earthengine-api
 geemap
 google-auth
