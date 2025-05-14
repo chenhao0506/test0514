@@ -53,7 +53,7 @@ Map
 
 n_clusters = 10
 clusterer_KMeans = ee.Clusterer.wekaKMeans(nClusters=n_clusters).train(training001)
-result001 = my_image.cluster(clusterer_KMeans)
+result001 = image.cluster(clusterer_KMeans)
 
 legend_dict = {
     'zero': '#ab0000',
