@@ -74,7 +74,7 @@ vis_params_001 = {'min': 0, 'max': 9, 'palette': palette}
 Map = geemap.Map()
 Map.centerObject(result001, 8)
 Map.addLayer(result001, vis_params_001, 'Labelled clusters')
-Map.add_legend(title='Land Cover Type', legend_dict = legend_dict1, position = 'bottomright')
+Map.add_legend(title='Land Cover Type', legend_dict = legend_dict, position = 'bottomright')
 Map
 
 Map = geemap.Map()
