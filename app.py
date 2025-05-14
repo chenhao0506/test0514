@@ -82,6 +82,6 @@ Map = geemap.Map()
 left_layer = geemap.ee_tile_layer(image, vis_params, 'visible light')
 right_layer = geemap.ee_tile_layer(result001,vis_params_001 , 'KMeans classified land cover')
 
-Map.centerObject(my_image.geometry(), 9)
+Map.centerObject(image.geometry(), 9)
 Map.split_map(left_layer, right_layer)
 Map
