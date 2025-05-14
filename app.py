@@ -1,60 +1,43 @@
 import streamlit as st
 import ee
-import geemap
-from google.oauth2 import service_account
 import geemap.foliumap as geemap
+from google.oauth2 import service_account
 
-# 從 Streamlit Secrets 讀取 GEE 服務帳戶金鑰 JSON
+# 初始化 GEE 
 service_account_info = st.secrets["GEE_SERVICE_ACCOUNT"]
-
-# 使用 google-auth 進行 GEE 授權
 credentials = service_account.Credentials.from_service_account_info(
     service_account_info,
     scopes=["https://www.googleapis.com/auth/earthengine"]
 )
-
-# 初始化 GEE
 ee.Initialize(credentials)
-###############################################
+
 st.set_page_config(layout="wide")
-st.title("🌍 使用服務帳戶連接 GEE 的 Streamlit App")
+st.title("🌍 使用 GEE 進行土地覆蓋分類（KMeans）")
 
-
-# 地理區域
+# 1. 選擇地點與資料 
 point = ee.Geometry.Point([120.5583462887228, 24.081653403304525])
-
-# 擷取 Harmonized Sentinel-2 MSI
 image = ee.ImageCollection("COPERNICUS/S2_HARMONIZED") \
     .filterBounds(point) \
     .filterDate("2021-01-01", "2022-01-01") \
-    .sort('CLOUDY_PIXEL_PERCENTAGE') \
+    .sort("CLOUDY_PIXEL_PERCENTAGE") \
     .first() \
-    .select('B.*') \
+    .select('B.*')
 
-vis_params = { 'min':100, 'max':3500, 'bands':['B11', 'B8', 'B3']}
-
-Map = geemap.Map()
-Map.centerObject(image, 12)
-Map.addLayer(image, vis_params, "Sentinel-2")
-Map
-
-training001 = image.sample(
-    **{
-        'region': image.geometry(),
-        'scale': 10,
-        'numPixels': 10000,
-        'seed': 0,
-        'geometries': True,
-    }
+# 2. 抽樣訓練
+training = image.sample(
+    region=image.geometry(),
+    scale=10,
+    numPixels=10000,
+    seed=0,
+    geometries=True
 )
 
-Map.addLayer(training001, {}, 'Training samples')
-Map
-
+# 3. 建立分群器與進行分類 
 n_clusters = 10
-clusterer_KMeans = ee.Clusterer.wekaKMeans(nClusters=n_clusters).train(training001)
-result001 = image.cluster(clusterer_KMeans)
+clusterer = ee.Clusterer.wekaKMeans(nClusters=n_clusters).train(training)
+classified = image.cluster(clusterer)
 
+# 4. 設定圖例與視覺化參數
 legend_dict = {
     'zero': '#ab0000',
     'one': '#1c5f2c',
@@ -66,22 +49,20 @@ legend_dict = {
     'seven': '#7b3294',
     'eight': '#a6cee3',
     'nine': '#b15928'
-    }
-
+}
 palette = list(legend_dict.values())
-vis_params_001 = {'min': 0, 'max': 9, 'palette': palette}
+vis_params_classified = {'min': 0, 'max': 9, 'palette': palette}
+vis_params_rgb = {'min': 100, 'max': 3500, 'bands': ['B11', 'B8', 'B3']}
 
+# 5. 建立地圖與滑動分割視窗
 Map = geemap.Map()
-Map.centerObject(result001, 8)
-Map.addLayer(result001, vis_params_001, 'Labelled clusters')
-Map.add_legend(title='Land Cover Type', legend_dict = legend_dict, position = 'bottomright')
-Map
+Map.centerObject(image.geometry(), 12)
 
-Map = geemap.Map()
+left_layer = geemap.ee_tile_layer(image, vis_params_rgb, "Sentinel-2 (RGB)")
+right_layer = geemap.ee_tile_layer(classified, vis_params_classified, "KMeans Clustering")
 
-left_layer = geemap.ee_tile_layer(image, vis_params, 'visible light')
-right_layer = geemap.ee_tile_layer(result001,vis_params_001 , 'KMeans classified land cover')
-
-Map.centerObject(image.geometry(), 9)
 Map.split_map(left_layer, right_layer)
-Map
+Map.add_legend(title="Land Cover Cluster", legend_dict=legend_dict)
+
+# 6. 輸出到 Streamlit 畫面
+Map.to_streamlit(height=600)
