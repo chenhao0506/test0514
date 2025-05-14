@@ -52,7 +52,7 @@ legend_dict = {
 }
 palette = list(legend_dict.values())
 vis_params_classified = {'min': 0, 'max': 9, 'palette': palette}
-vis_params_rgb = {'min': 100, 'max': 3500, 'bands': ['B11', 'B8', 'B3']}
+vis_params_rgb = {'min': 100,'max': 3500,'bands': ['B4', 'B3', 'B2']}
 
 # 5. 建立地圖與滑動分割視窗
 Map = geemap.Map()
